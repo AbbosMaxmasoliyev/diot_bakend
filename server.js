@@ -10,7 +10,7 @@ const inventoryRoutes = require('./routes/inventory');
 const salesRoutes = require('./routes/sales');
 const app = express();
 app.use(cors({
-    origin: 'http://localhost:5173', // Frontend domeningizni kiriting
+    origin: ['http://localhost:5173', "https://diot-front-tlvk.vercel.app"], // Frontend domeningizni kiriting
 }));
 app.use(bodyParser.json());
 
