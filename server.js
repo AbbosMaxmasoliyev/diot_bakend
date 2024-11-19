@@ -15,7 +15,7 @@ app.use(cors({
 app.use(bodyParser.json());
 
 // MongoDB bilan ulanish
-mongoose.connect('mongodb://localhost:27017/diot_lampochka_shop', {
+mongoose.connect('mongodb+srv://abbos:uzEgqsSDnf6rTLuq@cluster0.adosdaq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }).then(() => {
