@@ -29,7 +29,7 @@ router.get('/orders/:id', async (req, res) => {
 
 // Create New Order - POST /orders
 router.post('/orders', async (req, res) => {
-    const { customerId, products, paymentMethod } = req.body;
+    const { customerId, products, paymentMethod, discountApplied: discount } = req.body;
 
     if (!['cash', 'card', 'transfer', "debit"].includes(paymentMethod)) {
         return res.status(400).send("To'lov turi noto'g'ri");
@@ -49,7 +49,6 @@ router.post('/orders', async (req, res) => {
         await product.save();
     }
 
-    const discount = calculateDiscount(customer.distance);
     const finalPrice = totalPrice * (1 - discount);
 
     const order = new Order({

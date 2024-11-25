@@ -11,10 +11,10 @@ const { default: mongoose } = require('mongoose');
 // All Sales - GET /sales
 router.get('/sales', async (req, res) => {
   try {
-    const { days, startDate, endDate, } = req.query;
-    let filter = {};
+    const { days, startDate, endDate, page = 1, limit = 10 } = req.query;
+    const filter = {};
 
-    // Filtrlash turini aniqlash
+    // Determine the date filter based on query parameters
     if (days === 'today') {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
@@ -51,16 +51,35 @@ router.get('/sales', async (req, res) => {
       };
     }
 
+    // Pagination parameters
+    const pageNumber = Math.max(1, parseInt(page)); // Ensure page >= 1
+    const limitNumber = Math.max(1, parseInt(limit)); // Ensure limit >= 1
+    const skip = (pageNumber - 1) * limitNumber;
 
+    // Count total documents for pagination
+    const totalSales = await Sales.countDocuments(filter);
 
-    // Ma'lumotlarni topish
-    const sales = await Sales.find(filter).populate("outgoings").populate("products.productId").populate("customerId");
+    // Fetch paginated sales data
+    const sales = await Sales.find(filter)
+      .skip(skip)
+      .limit(limitNumber)
+      .populate('outgoings')
+      .populate('products.productId')
+      .populate('customerId');
 
-    res.json(sales);
+    // Respond with data
+    res.json({
+      totalSales,
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalSales / limitNumber),
+      sales,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: 'Server error occurred while fetching sales data.' });
   }
 });
+
 
 router.get('/sales/report', async (req, res) => {
   try {
@@ -132,8 +151,8 @@ router.get('/sales/report', async (req, res) => {
     }));
 
 
-    console.log(formattedReport);
-    
+    // console.log(formattedReport);
+
     res.status(200).json(formattedReport);
   } catch (err) {
     console.error(err);
@@ -158,8 +177,8 @@ router.get('/sales/:id', async (req, res) => {
 // Create New Sales - POST /sales
 // Create New Sales - POST /sales
 router.post('/sales', async (req, res) => {
-  const { customerId, products, paymentMethod } = req.body;
-  console.log(req.body);
+  const { customerId, products, paymentMethod, discountApplied: discount } = req.body;
+  // console.log(req.body);
 
   if (!['cash', 'card', 'transfer', 'debit'].includes(paymentMethod)) {
     return res.status(400).send("To'lov turi noto'g'ri");
@@ -175,7 +194,7 @@ router.post('/sales', async (req, res) => {
   // Mahsulotlarni qayta ishlash
   for (const item of products) {
     const inventoryItem = await Inventory.findOne({ productId: item.productId });
-    console.log(inventoryItem);
+    // console.log(inventoryItem);
 
     if (!inventoryItem || Number(inventoryItem.totalQuantity) < Number(item.quantity)) {
       return res.status(400).send(`Omborda mahsulot yetarli emas: ${item.productId}`);
@@ -193,12 +212,13 @@ router.post('/sales', async (req, res) => {
       quantity: item.quantity,
       currentStock: inventoryItem.totalQuantity,
       productId: item.productId,
+      salePrice: item.price
     });
 
     await outgoing.save();  // Outgoingni saqlash
 
     // Outgoingni inventorga qo'shish
-    inventoryItem.outgoings.push(outgoing._id);  // Faqat outgoing _id sini qo'shish
+    inventoryItem.outgoings.length ? inventoryItem.outgoings.push(outgoing._id) : inventoryItem.outgoings = [outgoing._id];  // Faqat outgoing _id sini qo'shish
     updatedInventory.push(inventoryItem);  // Yangilangan inventarni saqlash
 
     // Outgoing _id ni outgoingIds arrayiga qo'shish
@@ -206,8 +226,7 @@ router.post('/sales', async (req, res) => {
   }
 
   // Umumiy narxga chegirma hisoblash
-  const discount = calculateDiscount(customer.distance);
-  const finalPrice = totalPrice * (1 - discount);
+  const finalPrice = totalPrice * (1 - (discount / 100));
 
   // Savdo yozuvini yaratish
   const salesItem = new Sales({
@@ -218,13 +237,13 @@ router.post('/sales', async (req, res) => {
       outgoingId: outgoingIds.find(id => id.toString() === item.productId.toString())
     })),
     totalPrice: finalPrice,
-    discountApplied: discount * 100,
+    discountApplied: discount,
     paymentMethod,
     outgoings: outgoingIds,  // Outgoing _id larini salesga qo'shish
   });
 
   await salesItem.save();  // Sotuvni saqlash
-  console.log(salesItem);
+  // console.log(salesItem);
 
   // Omborni yangilash
   for (const inventoryItem of updatedInventory) {

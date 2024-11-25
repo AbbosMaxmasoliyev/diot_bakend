@@ -1,30 +1,31 @@
 // models/Outgoing.js
 const mongoose = require('mongoose');
 
-const outgoingSchema = new mongoose.Schema({
+const incomeSchema = new mongoose.Schema({
     date: {
         type: Date,
-        required: true,
+        default: Date.now,
     },
     quantity: {
         type: Number,
         required: true,
     },
-    currentStock: {
+    incomePrice: {
         type: Number,
         required: true,
-    },
-    salePrice: {
-        type: Number,
-        required: true
     },
     productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',  // Mahsulotni referans qilish
         required: true,
     },
+    supplier: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Supply',  // Mahsulotni referans qilish
+        required: true,
+    }
 });
 
-const Outgoing = mongoose.model('Outgoing', outgoingSchema);
+const Income = mongoose.model('Income', incomeSchema);
 
-module.exports = Outgoing;
+module.exports = Income;

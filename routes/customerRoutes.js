@@ -2,13 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const Customer = require('../models/Customer');
-const calculateDiscount = require('../utils/discountCalculator');
 
 // Mijoz qo'shish
 router.post('/customers', async (req, res) => {
-    const { name, region, distance, phoneNumber } = req.body;
-    const discountRate = calculateDiscount(distance); // chegirma stavkasini hisoblash
-    const customer = new Customer({ name, region, distance, discountRate, phoneNumber });
+    const { name, region, phoneNumber } = req.body;
+    const customer = new Customer({ name, region, phoneNumber });
     await customer.save();
     res.send(customer);
 });
@@ -39,11 +37,8 @@ router.get('/customers/:id', async (req, res) => {
 // Mijozni yangilash
 router.put('/customers/:id', async (req, res) => {
     const { id } = req.params;
-    const { name, region, distance, phoneNumber } = req.body;
-    if (distance) {
-        const discountRate = calculateDiscount(distance); // yangilangan chegirma stavkasi
-        req.body.discountRate = discountRate
-    }
+    const { name, region, phoneNumber } = req.body;
+
     try {
 
         const updatedCustomer = await Customer.findByIdAndUpdate(

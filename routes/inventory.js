@@ -2,6 +2,8 @@
 const express = require('express');
 const Inventory = require('../models/Inventory');
 const { default: mongoose } = require('mongoose');
+const Product = require('../models/Product');
+const Income = require('../models/Income');
 const router = express.Router();
 
 
@@ -35,7 +37,7 @@ router.get('/inventory/income/report', async (req, res) => {
             matchFilter['income.date'] = { $gte: oneMonthAgo };
         }
 
-        console.log("Match filter Inventor:", matchFilter);
+        // console.log("Match filter Inventor:", matchFilter);
 
         // Aggregation pipeline
         const report = await Inventory.aggregate([
@@ -55,7 +57,7 @@ router.get('/inventory/income/report', async (req, res) => {
             { $sort: { "_id.date": 1 } }, // Sanaga ko'ra tartiblash
         ]);
 
-        console.log("Report:", report);
+        // console.log("Report:", report);
 
         // Hisobotni formatlash
         const formattedReport = report.map(item => ({
@@ -71,10 +73,62 @@ router.get('/inventory/income/report', async (req, res) => {
     }
 });
 
+
 // Inventorni olish
+// Inventorni olish (qidiruv bilan)
 router.get('/inventory', async (req, res) => {
     try {
-        const inventories = await Inventory.find().populate("productId");
+        const searchQuery = req.query.search || ''; // Qidiruv so'zi
+        const page = parseInt(req.query.page, 10) || 1; // Joriy sahifa raqami (default 1)
+        const limit = parseInt(req.query.limit, 10) || 10; // Har bir sahifada ko'rsatiladigan elementlar soni (default 10)
+
+        // Qidiruv uchun mahsulot ID'larini olish
+        const productIds = await Product.find(
+            { name: { $regex: searchQuery, $options: 'i' } }, // Qidiruv sharti
+            { _id: 1 } // Faqat ID'larni olish
+        ).lean().distinct('_id'); // Natijani array sifatida olish
+
+        // Inventorydan qidirish va paginationni qo'llash
+        const totalCount = await Inventory.countDocuments({
+            productId: { $in: productIds }
+        }); // Umumiy inventar soni
+
+        const inventories = await Inventory.find({
+            productId: { $in: productIds }
+        })
+            .skip((page - 1) * limit) // Sahifalarni o'tkazib yuborish
+            .limit(limit) // Har bir sahifada ko'rsatiladigan elementlar soni
+            .populate("productId") // Bog'langan mahsulotlarni chiqarish
+            .populate("income", { productId: 0 }); // Bog'langan daromadni chiqarish
+
+        res.status(200).json({
+            data: inventories,
+            totalCount, // Umumiy inventar soni
+            currentPage: page, // Joriy sahifa
+            totalPages: Math.ceil(totalCount / limit), // Umumiy sahifalar soni
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Inventarni olishda xatolik yuz berdi", error: err.message });
+    }
+});
+
+
+router.get('/inventory-byId/:id', async (req, res) => {
+    try {
+        const paramsId = req.params.id; // Qidiruv so'zi
+
+        // 1. Mahsulot ID'larini olish
+        const inventories = await Inventory.findById(paramsId)
+            .populate({
+                path: 'income',
+                populate: {
+                    path: 'supplier', // supplier maydonini populate qilish
+                    model: 'Supply', // "Supply" modelini aniqlang
+                },
+            })
+            .populate('productId') // Mahsulot ma'lumotlarini ham populate qilish
+            .populate('outgoings'); // Agar outgoing kerak bo'lsa, uni ham populate qiling
+
         res.status(200).json(inventories);
     } catch (err) {
         res.status(500).json({ message: "Inventarni olishda xatolik yuz berdi", error: err.message });
@@ -83,45 +137,60 @@ router.get('/inventory', async (req, res) => {
 
 
 
+
+// Inventorni qo'shish
 // Inventorni qo'shish
 router.post('/inventory', async (req, res) => {
-    const { productId, totalQuantity, income, outgoings, price } = req.body;
+    const { productId, totalQuantity, incomePrice, price, supply } = req.body;
     console.log(req.body);
 
-
     try {
-        // Mahsulotni tekshirish
-        const existingInventory = await Inventory.findOne({ productId });
-        console.log(totalQuantity);
-
-        if (existingInventory) {
-            // Mahsulot mavjud bo'lsa, kirimlarni yangilash
-            existingInventory.totalQuantity += parseInt(totalQuantity);  // Yangi kirimni qo'shish
-            existingInventory.income.push({
-                currentStock: price,
-                quantity: totalQuantity,
-            });  // Yangi income (kirim) qo'shish
-
-            // Mahsulotni saqlash
-            await existingInventory.save();
-            return res.status(200).json(existingInventory);
+        // Check if the product exists
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: "Mahsulot topilmadi" });
         }
 
-        // Agar mahsulot mavjud bo'lmasa, yangi inventory yaratish
-        const newInventory = new Inventory({
+        // Create a new Income record
+        const incomeData = new Income({
+            quantity: totalQuantity,
+            incomePrice: parseFloat(incomePrice),
+            price,
             productId,
-            totalQuantity,
-            income: {
-                currentStock: price,
-                quantity: totalQuantity,
-            },
-            outgoings,
-            price
+            supplier: supply,
         });
 
-        await newInventory.save();
-        res.status(201).json(newInventory);
+        await incomeData.save();
+
+        // Check if the inventory already exists
+        let inventory = await Inventory.findOne({ productId });
+
+        if (inventory) {
+            // Update existing inventory
+            inventory.totalQuantity += parseInt(totalQuantity, 10);
+            inventory.income.push(incomeData._id);
+
+            await inventory.save();
+        } else {
+            // Create new inventory
+            inventory = new Inventory({
+                productId,
+                totalQuantity,
+                income: [incomeData._id],
+                outgoings: [],
+                price,
+            });
+
+            await inventory.save();
+        }
+
+        // Update the product's price to match the inventory's price
+        product.price = price;
+        await product.save();
+
+        res.status(201).json(inventory);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Inventar qo'shishda xatolik yuz berdi", error: err.message });
     }
 });
@@ -129,26 +198,74 @@ router.post('/inventory', async (req, res) => {
 
 // Inventorni yangilash
 router.put('/inventory/:id', async (req, res) => {
-    const { productId, totalQuantity, income, outgoings, price } = req.body;
+    const { productId, totalQuantity, incomePrice, price } = req.body;
 
     try {
-        const updatedInventory = await Inventory.findByIdAndUpdate(
-            req.params.id,
-            { productId, totalQuantity, income, outgoings, price },
-            { new: true }
-        );
-        res.status(200).json(updatedInventory);
+        // Find and update the inventory
+        const inventory = await Inventory.findById(req.params.id);
+        if (!inventory) {
+            return res.status(404).json({ message: "Inventar topilmadi" });
+        }
+
+        // Update inventory fields
+        inventory.totalQuantity = totalQuantity;
+        inventory.price = price;
+
+        // Find the latest income record and update its price if needed
+        if (incomePrice) {
+            const latestIncome = await Income.findOne({ _id: { $in: inventory.income } }).sort({ date: -1 });
+            if (latestIncome) {
+                latestIncome.incomePrice = parseFloat(incomePrice);
+                await latestIncome.save();
+            }
+        }
+
+        // Save inventory
+        await inventory.save();
+
+        // Update the product's price to match the updated inventory price
+        const product = await Product.findById(productId);
+        if (product) {
+            product.price = price;
+            await product.save();
+        }
+
+        res.status(200).json(inventory);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Inventarni yangilashda xatolik yuz berdi", error: err.message });
     }
 });
 
+
 // Inventorni o'chirish
+// Inventarni o'chirish
 router.delete('/inventory/:id', async (req, res) => {
     try {
-        const deletedInventory = await Inventory.findByIdAndDelete(req.params.id);
-        res.status(200).json(deletedInventory);
+        // Find the inventory by ID
+        const inventory = await Inventory.findById(req.params.id);
+        if (!inventory) {
+            return res.status(404).json({ message: "Inventar topilmadi" });
+        }
+
+        const productId = inventory.productId;
+
+        // Delete associated income records
+        await Income.deleteMany({ _id: { $in: inventory.income } });
+
+        // Delete the inventory
+        await inventory.deleteOne();
+
+        // Reset the product's price to default (e.g., `null` or some other value)
+        const product = await Product.findById(productId);
+        if (product) {
+            product.price = null; // Or set to a default value
+            await product.save();
+        }
+
+        res.status(200).json({ message: "Inventar o'chirildi" });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Inventarni o'chirishda xatolik yuz berdi", error: err.message });
     }
 });
