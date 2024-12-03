@@ -9,7 +9,13 @@ const salesSchema = new mongoose.Schema({
             quantity: Number,
         }
     ],
-    totalPrice: Number, // Hisoblangan umumiy narx
+    totalPrice: [{
+        cost: { type: Number },
+        currency: {
+            type: String,
+            enum: ["UZS", "USD"]
+        }
+    }], // Hisoblangan umumiy narx
     discountApplied: Number, // Qo'llangan chegirma
     paymentMethod: { type: String, enum: ['cash', 'card', 'transfer', "debit"], required: true }, // To'lov turi,
     date: {

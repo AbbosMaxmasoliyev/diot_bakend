@@ -4,10 +4,10 @@ const Inventory = require('./Inventory'); // Inventory modelini import qilamiz
 const productSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: String,
-    price: { type: Number, required: true },
+   
     category: String,
     createdAt: { type: Date, default: Date.now },
-    updateAt: { type: Date, default: Date.now }
+    updateAt: { type: Date, default: Date.now },
 });
 
 productSchema.pre('findOneAndDelete', async function (next) {

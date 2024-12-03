@@ -11,8 +11,15 @@ const incomeSchema = new mongoose.Schema({
         required: true,
     },
     incomePrice: {
-        type: Number,
-        required: true,
+        cost: Number,
+        currency: {
+            type: String,
+            enum: ["USD", "UZS"]
+        }
+    },
+    currency: {
+        type: String,
+        enum: ["UZS", "USD"]
     },
     productId: {
         type: mongoose.Schema.Types.ObjectId,
