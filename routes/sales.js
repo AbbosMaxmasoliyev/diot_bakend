@@ -193,12 +193,14 @@ router.delete('/sales/:id', async (req, res) => {
 
     const updatedInventory = [];
     for (const outgoing of salesItem.outgoings) {
+      console.log(outgoing);
+      
       const outgoingRecord = await Outgoing.findById(outgoing);
       const inventoryItem = await Inventory.findOne({ productId: outgoingRecord.productId });
       inventoryItem.totalQuantity += outgoingRecord.quantity;
       inventoryItem.outgoings.pull(outgoingRecord._id);
       updatedInventory.push(inventoryItem);
-      await outgoingRecord.remove();
+      await outgoingRecord.deleteOne();
     }
 
     await Sales.findByIdAndDelete(req.params.id);
