@@ -43,10 +43,12 @@ router.get('/sales', async (req, res) => {
 
     const totalSales = await Sales.countDocuments(filter);
     const sales = await Sales.find(filter)
-      .skip(skip)
-      .limit(limitNumber)
-      .populate('outgoings')
-      .populate('products.productId')
+      .skip(skip)                          // Sahifalash uchun belgilangan sonni o'tkazib yuborish
+      .limit(limitNumber)                  // Belgilangan sonicha yozuvni olish
+      .populate({
+        path: 'outgoings',                 // "outgoings"ni bog'lash
+        populate: { path: 'productId' }    // "outgoings.productId"ni ham bog'lash
+      })
       .populate('customerId');
 
     res.json({
@@ -105,9 +107,9 @@ router.get('/sales/report', async (req, res) => {
 // Get Sale by ID - GET /sales/:id
 router.get('/sales/:id', async (req, res) => {
   try {
-    const salesItem = await Sales.findById(req.params.id)
+    const salesItem = await Sales.findById(req.params.id, { productId: 0 })
       .populate('customerId')
-      .populate('products.productId');
+      .populate('outgoings.productId');
     if (!salesItem) return res.status(404).send('Savdo topilmadi');
     res.send(salesItem);
   } catch (err) {
@@ -134,7 +136,7 @@ router.post('/sales', async (req, res) => {
 
     for (const item of products) {
       const inventoryItem = await Inventory.findOne({ productId: item.productId });
-
+      console.log(item,"=>>>> ITEM")
       if (!inventoryItem || inventoryItem.totalQuantity < item.quantity) {
         return res.status(400).send(`Omborda mahsulot yetarli emas: ${item.productId}`);
       }
@@ -185,6 +187,31 @@ router.post('/sales', async (req, res) => {
   }
 });
 
+router.put('/sales/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paymentMethod } = req.body;
+
+    // Tekshirish: Faqat to'lov turini yangilashga ruxsat beriladi
+    if (!['cash', 'card', 'transfer', 'debit'].includes(paymentMethod)) {
+      return res.status(400).send('To\'lov turi noto\'g\'ri');
+    }
+
+    const sale = await Sales.findById(id);
+    if (!sale) return res.status(404).send('Sotuv topilmadi');
+
+    // Faqat to'lov turini yangilash
+    sale.paymentMethod = paymentMethod;
+
+    await sale.save();
+
+    res.send(sale);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server xatosi');
+  }
+});
+
 // Delete Sale - DELETE /sales/:id
 router.delete('/sales/:id', async (req, res) => {
   try {
@@ -194,7 +221,7 @@ router.delete('/sales/:id', async (req, res) => {
     const updatedInventory = [];
     for (const outgoing of salesItem.outgoings) {
       console.log(outgoing);
-      
+
       const outgoingRecord = await Outgoing.findById(outgoing);
       const inventoryItem = await Inventory.findOne({ productId: outgoingRecord.productId });
       inventoryItem.totalQuantity += outgoingRecord.quantity;

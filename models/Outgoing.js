@@ -14,7 +14,7 @@ const outgoingSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
-    salePrice: [{
+    salePrice: {
         cost: {
             type: Number,
             required: true
@@ -23,7 +23,7 @@ const outgoingSchema = new mongoose.Schema({
             type: String,
             enum: ["UZS", "USD"]
         }
-    }],
+    },
     productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',  // Mahsulotni referans qilish
