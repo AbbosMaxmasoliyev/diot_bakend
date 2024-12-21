@@ -26,7 +26,12 @@ const salesSchema = new mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId, ref: 'Outgoing'
         }
-    ]
+    ],
+    who: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User' // User ID
+
+    }
 }, { timestamps: true, timeseries: true, autoSearchIndex: true });
 
 module.exports = mongoose.model('Sales', salesSchema);

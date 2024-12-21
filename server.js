@@ -10,6 +10,8 @@ const inventoryRoutes = require('./routes/inventory');
 const salesRoutes = require('./routes/sales');
 const supplyRoutes = require('./routes/supplyRoutes');
 const importRoutes = require('./routes/importRoutes');
+const userRoutes = require("./routes/user");
+const { authenticateUser } = require('./middleware/auth');
 const app = express();
 app.use(cors({
     origin: ['http://localhost:5173', "https://diot-front-tlvk.vercel.app"], // Frontend domeningizni kiriting
@@ -31,13 +33,15 @@ mongoose.connect(
 
 
 
-app.use('/api', customerRoutes);
-app.use('/api', productRoutes);
-app.use('/api', orderRoutes);
-app.use('/api', inventoryRoutes);
-app.use('/api', salesRoutes);
-app.use('/api', supplyRoutes);
-app.use('/api', importRoutes);
+app.use('/api', userRoutes);
+app.use('/api', authenticateUser(), customerRoutes);
+app.use('/api', authenticateUser(), productRoutes);
+app.use('/api', authenticateUser(), orderRoutes);
+app.use('/api', authenticateUser(), inventoryRoutes);
+app.use('/api', authenticateUser(), salesRoutes);
+app.use('/api', authenticateUser(), supplyRoutes);
+app.use('/api', authenticateUser(), importRoutes);
+
 // Serverni ishga tushirish
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

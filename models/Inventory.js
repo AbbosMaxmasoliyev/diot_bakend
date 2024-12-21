@@ -7,6 +7,7 @@ const inventorySchema = new mongoose.Schema({
     income: [{ type: mongoose.Types.ObjectId, ref: "Income", required: true }],
     outgoings: [{ type: mongoose.Types.ObjectId, ref: "Outgoing", required: true }],
     price: { cost: { type: Number, required: true }, currency: { type: String, enum: ["UZS", "USD"] } },
+
 }, { timestamps: true });
 
 

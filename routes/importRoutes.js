@@ -62,7 +62,8 @@ router.get('/import', async (req, res) => {
             .limit(limitNumber)
             .populate('incomes')
             .populate('products.productId')
-            .populate('supplierId');
+            .populate('supplierId')
+            .populate("who");
 
         res.json({
             totalImports,
@@ -135,7 +136,7 @@ router.post('/import', async (req, res) => {
     }
 
     const importItem = new Import({
-        supplierId:supplier,
+        supplierId: supplier,
         products: products.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -145,6 +146,7 @@ router.post('/import', async (req, res) => {
         additionalCosts,
         paymentMethod,
         incomes: incomeIds,
+        who: req.user.id
     });
 
     await importItem.save();

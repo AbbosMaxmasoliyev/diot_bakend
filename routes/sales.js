@@ -49,7 +49,8 @@ router.get('/sales', async (req, res) => {
         path: 'outgoings',                 // "outgoings"ni bog'lash
         populate: { path: 'productId' }    // "outgoings.productId"ni ham bog'lash
       })
-      .populate('customerId');
+      .populate('customerId')
+      .populate("who");
 
     res.json({
       totalSales,
@@ -109,7 +110,8 @@ router.get('/sales/:id', async (req, res) => {
   try {
     const salesItem = await Sales.findById(req.params.id, { productId: 0 })
       .populate('customerId')
-      .populate('outgoings.productId');
+      .populate('outgoings.productId')
+      .populate("who");
     if (!salesItem) return res.status(404).send('Savdo topilmadi');
     res.send(salesItem);
   } catch (err) {
@@ -136,7 +138,7 @@ router.post('/sales', async (req, res) => {
 
     for (const item of products) {
       const inventoryItem = await Inventory.findOne({ productId: item.productId });
-      console.log(item,"=>>>> ITEM")
+      console.log(item, "=>>>> ITEM")
       if (!inventoryItem || inventoryItem.totalQuantity < item.quantity) {
         return res.status(400).send(`Omborda mahsulot yetarli emas: ${item.productId}`);
       }
@@ -173,6 +175,7 @@ router.post('/sales', async (req, res) => {
       discountApplied,
       paymentMethod,
       outgoings: outgoingIds,
+      who: req.user.id
     });
 
     await salesItem.save();

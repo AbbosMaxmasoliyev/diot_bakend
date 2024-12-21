@@ -40,7 +40,11 @@ const importSchema = new mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId, ref: 'Income' // Income ID lar
         }
-    ]
+    ],
+    who: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User' // User ID lar
+    }
 }, { timestamps: true, timeseries: true, autoSearchIndex: true });
 
 module.exports = mongoose.model('Import', importSchema);
