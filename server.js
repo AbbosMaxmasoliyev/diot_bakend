@@ -62,7 +62,7 @@ app.get('/download/:id', async (req, res) => {
   res.setHeader('Content-Type', 'text/html')
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename=Sotuv-${sale.invoiceId}.pdf`
+    `attachment; filename=Sotuv-${sale.invoiceId}.html`
   )
 
   // Send the HTML content as the response
