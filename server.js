@@ -59,7 +59,7 @@ app.get('/download/:id', async (req, res) => {
     })
   const htmlContent = await htmlCreator(sale, websiteUrl)
   // Set the appropriate headers to prompt the browser to download the file
-  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Type', 'text/html')
   res.setHeader(
     'Content-Disposition',
     `attachment; filename=Sotuv-${sale.invoiceId}.pdf`
