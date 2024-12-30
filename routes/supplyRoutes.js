@@ -5,7 +5,7 @@ const router = express.Router();
 // Ta'minlovchilarni olish
 router.get('/supplies/', async (req, res) => {
     try {
-        const supplies = await Supply.find().sort({ createdAt: -1 });
+        const supplies = await Supply.find({ status: true }).sort({ createdAt: -1 });
         res.status(200).json(supplies);
     } catch (err) {
         res.status(500).json({ error: 'Server xatosi' });
@@ -56,7 +56,7 @@ router.delete('/supplies/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
-        const deletedSupply = await Supply.findByIdAndDelete(id);
+        const deletedSupply = await Supply.findByIdAndUpdate(id, { status: false });
 
         if (!deletedSupply) {
             return res.status(404).json({ error: 'Ta’minlovchi topilmadi' });

@@ -6,15 +6,26 @@ const Customer = require('../models/Customer');
 // Mijoz qo'shish
 router.post('/customers', async (req, res) => {
     const { name, region, phoneNumber } = req.body;
-    const customer = new Customer({ name, region, phoneNumber });
-    await customer.save();
-    res.send(customer);
+    try {
+
+        const customer = new Customer({ name, region, phoneNumber });
+        await customer.save();
+        res.send(customer);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" })
+    }
 });
 
 // Barcha mijozlarni ko'rish
 router.get('/customers', async (req, res) => {
-    const customers = await Customer.find();
-    res.send(customers);
+    try {
+
+        const customers = await Customer.find({ status: true });
+        res.send(customers);
+    } catch (error) {
+        res.status(500).send({ error: "Internal server error" })
+
+    }
 });
 
 
@@ -62,7 +73,7 @@ router.delete('/customers/:id', async (req, res) => {
     const { id } = req.params;
 
     try {
-        const deletedCustomer = await Customer.findByIdAndDelete(id);
+        const deletedCustomer = await Customer.findByIdAndUpdate(id, { status: false });
 
         if (!deletedCustomer) {
             return res.status(404).send({ error: "Mijoz topilmadi" });

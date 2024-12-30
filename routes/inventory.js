@@ -84,7 +84,7 @@ router.get('/inventory', async (req, res) => {
 
         // Qidiruv uchun mahsulot ID'larini olish
         const productIds = await Product.find(
-            { name: { $regex: searchQuery, $options: 'i' } }, // Qidiruv sharti
+            { name: { $regex: searchQuery, $options: 'i' }, status: true }, // Qidiruv sharti
             { _id: 1 } // Faqat ID'larni olish
         ).lean().distinct('_id'); // Natijani array sifatida olish
 
@@ -138,7 +138,6 @@ router.get('/inventory-byId/:id', async (req, res) => {
 
 
 
-// Inventorni qo'shish
 // Inventorni qo'shish
 router.post('/inventory', async (req, res) => {
     const { productId, totalQuantity, incomePrice, price, supply } = req.body;

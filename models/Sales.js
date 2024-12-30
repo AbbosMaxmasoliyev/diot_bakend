@@ -2,6 +2,10 @@
 const mongoose = require('mongoose');
 
 const salesSchema = new mongoose.Schema({
+    invoiceId: {
+        type: String,
+        required: true
+    },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
     products: [
         {

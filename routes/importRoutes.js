@@ -116,16 +116,16 @@ router.post('/import', async (req, res) => {
         }
 
         inventoryItem.totalQuantity += item.quantity;
-        inventoryItem.price = item.incomePrice;
+        inventoryItem.price = item.costPrice;
 
         const income = new Income({
             date: new Date(),
             quantity: item.quantity,
             currentStock: inventoryItem.totalQuantity,
             productId: item.productId,
-            costPrice: item.incomePrice.cost,
+            costPrice: item.costPrice.cost,
             supplier,
-            currency: item.incomePrice.currency,
+            currency: item.costPrice.currency,
         });
 
         await income.save();
