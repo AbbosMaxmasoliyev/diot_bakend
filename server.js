@@ -56,13 +56,13 @@ app.get('/download/:id', async (req, res) => {
     path: 'outgoings', // "outgoings"ni bog'lash
     populate: { path: 'productId' } // "outgoings.productId"ni ham bog'lash
   })
-  const websiteUrl = `https://diot-front-tlvk.vercel.app/download/${req.params.id}/${sale.invoiceId}`
+  const websiteUrl = `https://diot-front-tlvk.vercel.app/download/${req.params.id}/${sale?.invoiceId}/auto`
   const htmlContent = await htmlCreator(sale, websiteUrl)
   // Set the appropriate headers to prompt the browser to download the file
   res.setHeader('Content-Type', 'text/html')
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename=Sotuv-${sale.invoiceId}.html`
+    `attachment; filename=Sotuv-${sale?.invoiceId}.html`
   )
 
   // Send the HTML content as the response

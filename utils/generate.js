@@ -1,11 +1,11 @@
 const QRCode = require('qrcode')
 
-const formatPhoneNumber = value => {
+const formatPhoneNumber = (value) => {
   // Faqat raqamlar
-  const phoneNumber = value.toString().replace(/[^\d]/g, '')
+  const phoneNumber = value?.toString().replace(/[^\d]/g, '')
 
   // Agar raqam 9 ta bo'lsa, telefon raqamini formatlash
-  if (phoneNumber.length >= 12) {
+  if (phoneNumber?.length >= 12) {
     return (
       '+998 (' +
       phoneNumber.slice(3, 5) +
@@ -17,7 +17,6 @@ const formatPhoneNumber = value => {
       phoneNumber.slice(10, 12)
     )
   }
-  console.log(phoneNumber.length)
 
   return phoneNumber // Raqamlar uzunligi 9 dan katta bo'lsa, qaytarish
 }
@@ -248,12 +247,12 @@ const htmlCreator = async (sale, url) => {
   </head>
   <body>
     <div class="w-container">
-      <div class="title">ID${sale.invoiceId}</div>
+      <div class="title">ID${sale?.invoiceId}</div>
       <div class="section">
         <div class="line-container">
           <span>Sana</span>
           <div class="line"></div>
-          <span>${new Date(sale.date).toLocaleDateString()}</span>
+          <span>${new Date(sale?.date).toLocaleDateString()}</span>
         </div>
       </div>
       <div class="section">
@@ -261,17 +260,17 @@ const htmlCreator = async (sale, url) => {
         <div class="line-container">
           <span>Ismi:</span>
           <div class="line"></div>
-          <span>${sale.customerId.name}</span>
+          <span>${sale?.customerId?.name}</span>
         </div>
         <div class="line-container">
           <span>Telefon:</span>
           <div class="line"></div>
-          <span>${formatPhoneNumber(sale.customerId.phoneNumber)}</span>
+          <span>${formatPhoneNumber(sale?.customerId?.phoneNumber)}</span>
         </div>
         <div class="line-container">
           <span>Manzil</span>
           <div class="line"></div>
-          <span>${sale.customerId.region}</span>
+          <span>${sale?.customerId?.region}</span>
         </div>
       </div>
       <div class="section">
@@ -279,12 +278,12 @@ const htmlCreator = async (sale, url) => {
         <div class="line-container">
           <span>Sotuvchi ismi:</span>
           <div class="line"></div>
-          <span>${sale.who.username}</span>
+          <span>${sale?.who?.username}</span>
         </div>
         <div class="line-container">
           <span>Telefon</span>
           <div class="line"></div>
-          <span>${formatPhoneNumber(sale.who.phoneNumber)}</span>
+          <span>${formatPhoneNumber(sale?.who?.phoneNumber)}</span>
         </div>
       </div>
       <div class="section">
@@ -292,7 +291,7 @@ const htmlCreator = async (sale, url) => {
           <span>To'lov usuli</span>
           <div class="line"></div>
           <span>
-            ${sale.paymentMethod}
+            ${sale?.paymentMethod}
           </span>
         </div>
       </div>
@@ -300,25 +299,25 @@ const htmlCreator = async (sale, url) => {
         <div class="details">
           <span class="capital">Mahsulot</span><span>Narxi</span>
         </div>
-        ${sale.outgoings.map(
+        ${sale?.outgoings?.map(
           (outgoing, index) =>
             `<span>
             <p class='capital'>
-              ${index + 1}. ${outgoing.productId.name}
+              ${index + 1}. ${outgoing?.productId?.name}
             </p>
             <div class='details'>
               <div class='line-container'>
                 <span>
-                ${outgoing.quantity} X ${formatCurrency(
-              outgoing.salePrice.cost,
-              outgoing.salePrice.currency
+                ${outgoing?.quantity} X ${formatCurrency(
+              outgoing?.salePrice?.cost,
+              outgoing?.salePrice?.currency
             )}
                 </span>
                 <div class='line'></div>
                 <span>
                 ${formatCurrency(
-                  (outgoing.salePrice.cost * outgoing.quantity).toFixed(2),
-                  outgoing.salePrice.currency
+                  (outgoing?.salePrice?.cost * outgoing?.quantity).toFixed(2),
+                  outgoing?.salePrice?.currency
                 )}
                   </span>
               </div>
@@ -333,7 +332,7 @@ const htmlCreator = async (sale, url) => {
           <span>USD</span>
           <div class="line"></div>
           <span>${formatCurrency(
-            sale.totalPrice.find(p => p.currency === 'USD')?.cost.toFixed(2),
+            sale?.totalPrice?.find(p => p.currency === 'USD')?.cost.toFixed(2),
             'USD'
           )}</span>
         </div>
@@ -341,14 +340,14 @@ const htmlCreator = async (sale, url) => {
           <span>UZS</span>
           <div class="line"></div>
           <span>${formatCurrency(
-            sale.totalPrice.find(p => p.currency === 'UZS')?.cost.toFixed(2),
+            sale?.totalPrice?.find(p => p.currency === 'UZS')?.cost.toFixed(2),
             'UZS'
           )}</span>
         </div>
         <div class="line-container">
           <span>Berilgan chegirma</span>
           <div class="line"></div>
-          <span>${`${sale.discountApplied ? sale.discountApplied : 0}%`}</span>
+          <span>${`${sale?.discountApplied ? sale?.discountApplied : 0}%`}</span>
         </div>
       </div>
       <img src="${qrCodeDataUrl}" alt="QR Code" />
