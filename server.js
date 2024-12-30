@@ -49,14 +49,14 @@ app.use('/api', authenticateUser(), salesRoutes)
 app.use('/api', authenticateUser(), supplyRoutes)
 app.use('/api', authenticateUser(), importRoutes)
 app.get('/download/:id', async (req, res) => {
-  const websiteUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`
   const sale = await Sales.findById(req.params.id)
-    .populate('customerId')
-    .populate('who')
-    .populate({
-      path: 'outgoings', // "outgoings"ni bog'lash
-      populate: { path: 'productId' } // "outgoings.productId"ni ham bog'lash
-    })
+  .populate('customerId')
+  .populate('who')
+  .populate({
+    path: 'outgoings', // "outgoings"ni bog'lash
+    populate: { path: 'productId' } // "outgoings.productId"ni ham bog'lash
+  })
+  const websiteUrl = `https://diot-front-tlvk.vercel.app/download/${req.params.id}/${sale.invoiceId}`
   const htmlContent = await htmlCreator(sale, websiteUrl)
   // Set the appropriate headers to prompt the browser to download the file
   res.setHeader('Content-Type', 'text/html')
