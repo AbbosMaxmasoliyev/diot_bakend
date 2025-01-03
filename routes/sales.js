@@ -212,7 +212,7 @@ router.post('/sales', async (req, res) => {
     const lastSale = await Sales.findOne().sort({ invoiceId: -1 })
 
     const salesItem = new Sales({
-      invoiceId: lastSale?.invoiceId + 1 || '00001',
+      invoiceId: lastSale?.invoiceId + 1 || 1,
       customerId,
       products: products.map(item => ({
         productId: item.productId,
